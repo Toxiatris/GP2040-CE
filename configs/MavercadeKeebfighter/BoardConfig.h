@@ -6,7 +6,8 @@
 #ifndef MAVERCADEKEEBFIGHTER_CONFIG_H_
 #define MAVERCADEKEEBFIGHTER_CONFIG_H_
 
-#include <GamepadEnums.h>
+#include "enums.pb.h"
+
 // Mapping between Mavercade Keebfighter switch number (as silkscreened) and GPIO pin
 
 #define FLATBOX_SW1_PIN    14
@@ -59,8 +60,8 @@
 #define PIN_BUTTON_TURBO -1         // Turbo
 #define PIN_SLIDER_LS    -1         // Left Stick Slider
 #define PIN_SLIDER_RS    -1         // Right Stick Slider
-#define PIN_SLIDER_SOCD_NEUTRAL    -1         // SOCD Up Priority Slider
-#define PIN_SLIDER_SOCD_SECOND    -1         // SOCD Second Input Priority Slider
+#define PIN_SLIDER_SOCD_ONE    -1         // SOCD Slider Pin One
+#define PIN_SLIDER_SOCD_TWO    -1         // SOCD Slider Pin Two
 
 
 // This is the SOCD section.
@@ -69,9 +70,16 @@
 // 1 - `SOCD_MODE_NEUTRAL` - This is a neutral SOCD.  EG. when you press `up` + `down` no input will be registered.
 // 2 - `SOCD_MODE_UP_PRIORITY` - This is up priority SOCD.  EG. when you press `up` + `down` `up` will be registered.
 // 3 - `SOCD_MODE_SECOND_INPUT_PRIORITY` - This is last priority SOCD.  EG. when you press and hold `up` then press `down` `down` will be registered.
+// 4 - `SOCD_MODE_FIRST_INPUT_PRIORITY` - This is first priority SOCD.  EG. when you press and hold `up` then press `down` `up` will be registered.
 
 #define DEFAULT_SOCD_MODE SOCD_MODE_NEUTRAL
+// SOCD Slider Slot Defaults
+#define SLIDER_SOCD_SLOT_ONE SOCD_MODE_UP_PRIORITY
+#define SLIDER_SOCD_SLOT_TWO  SOCD_MODE_SECOND_INPUT_PRIORITY
+#define SLIDER_SOCD_SLOT_DEFAULT SOCD_MODE_NEUTRAL
 
+#define DEFAULT_FORCED_SETUP_MODE FORCED_SETUP_MODE_OFF // 	FORCED_SETUP_MODE_OFF, FORCED_SETUP_MODE_LOCK_MODE_SWITCH, FORCED_SETUP_MODE_LOCK_WEB_CONFIG, FORCED_SETUP_MODE_LOCK_BOTH
+#define DEFAULT_LOCK_HOTKEYS false // or true
 
 // This is the LEDs section.
 // The default `TURBO_LED_PIN` pin is set to `15` ( it is recommended to run through 3V3(OUT) with a resistor)
@@ -172,8 +180,8 @@
 // 4 - `NOSPLASH` - This will not display a splash screen on boot
 // Special note - All of the splash screen images can be changed via `include/bitmaps.h`
 
-#define SPLASH_MODE NOSPLASH
-#define SPLASH_CHOICE MAIN
+#define SPLASH_MODE SPLASH_MODE_NONE
+#define SPLASH_CHOICE SPLASH_CHOICE_MAIN
 
 
 // The default `BUTTON_LAYOUT` is `BUTTON_LAYOUT_STICK` which will show an arcade stick on the left hand side of the display.
@@ -213,7 +221,7 @@
 //                  on the current mode (config, normal, or no USB data)
 // INPUT_TEST     - Blinks whenever any input is made
 
-#define BOARD_LED_TYPE BOARD_LED_OFF
+#define BOARD_LED_TYPE ON_BOARD_LED_MODE_OFF
 
 // Dual Directional Add-on Options
 
@@ -230,9 +238,13 @@
 // Extra Button Add-on setting
 
 #define EXTRA_BUTTON_ENABLED 1
-#define EXTRA_BUTTON_MASK (1U << 14) // 0 means none, get other mask from GamepadState.h
+#define EXTRA_BUTTON_MASK GAMEPAD_MASK_DU // 0 means none, get other mask from GamepadState.h
+                                          // For directions, use GAMEPAD_MASK_DU, GAMEPAD_MASK_DD, GAMEPAD_MASK_DL and GAMEPAD_MASK_DR
 #define EXTRA_BUTTON_PIN 1
 
+// Keyboard Mapping Configuration
+// List of HID keycodes can be located here: https://github.com/hathach/tinyusb/blob/3623ba1884ddff23e9b64766cb6dd032f1425846/src/class/hid/hid.h#L356
+// Even for the modifier keys, HID_KEY entries should be used as the implementation expects those and will convert as necessary.
 #define KEY_DPAD_UP     HID_KEY_ARROW_UP      // UP
 #define KEY_DPAD_DOWN   HID_KEY_ARROW_DOWN    // DOWN
 #define KEY_DPAD_RIGHT  HID_KEY_ARROW_RIGHT   // RIGHT
@@ -251,5 +263,25 @@
 #define KEY_BUTTON_R3   HID_KEY_MINUS         // R3 / RS / RS / R3 / 12 / RS
 #define KEY_BUTTON_A1   HID_KEY_9             // A1 / Guide / Home / PS / 13 / ~
 #define KEY_BUTTON_A2   HID_KEY_F2            // A2 / ~ / Capture / ~ / 14 / ~
+
+// Hotkey Action Mapping
+// Find the list of hotkey actions in GamepadEnums.h
+#define HOTKEY_F1_UP_MASK      GAMEPAD_MASK_UP
+#define HOTKEY_F1_UP_ACTION    HOTKEY_HOME_BUTTON
+#define HOTKEY_F1_DOWN_MASK    GAMEPAD_MASK_DOWN
+#define HOTKEY_F1_DOWN_ACTION  HOTKEY_DPAD_DIGITAL
+#define HOTKEY_F1_LEFT_MASK    GAMEPAD_MASK_LEFT
+#define HOTKEY_F1_LEFT_ACTION  HOTKEY_DPAD_LEFT_ANALOG
+#define HOTKEY_F1_RIGHT_MASK   GAMEPAD_MASK_RIGHT
+#define HOTKEY_F1_RIGHT_ACTION HOTKEY_DPAD_RIGHT_ANALOG
+
+#define HOTKEY_F2_UP_MASK      GAMEPAD_MASK_UP
+#define HOTKEY_F2_UP_ACTION    HOTKEY_SOCD_UP_PRIORITY
+#define HOTKEY_F2_DOWN_MASK    GAMEPAD_MASK_DOWN
+#define HOTKEY_F2_DOWN_ACTION  HOTKEY_SOCD_NEUTRAL
+#define HOTKEY_F2_LEFT_MASK    GAMEPAD_MASK_LEFT
+#define HOTKEY_F2_LEFT_ACTION  HOTKEY_SOCD_LAST_INPUT
+#define HOTKEY_F2_RIGHT_MASK   GAMEPAD_MASK_RIGHT
+#define HOTKEY_F2_RIGHT_ACTION HOTKEY_INVERT_Y_AXIS
 
 #endif

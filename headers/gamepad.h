@@ -5,15 +5,16 @@
 #include <string.h>
 
 #include "gamepad/GamepadDebouncer.h"
-#include "gamepad/GamepadOptions.h"
 #include "gamepad/GamepadState.h"
-#include "gamepad/GamepadStorage.h"
 #include "gamepad/descriptors/HIDDescriptors.h"
 #include "gamepad/descriptors/SwitchDescriptors.h"
 #include "gamepad/descriptors/XInputDescriptors.h"
 #include "gamepad/descriptors/KeyboardDescriptors.h"
+#include "gamepad/descriptors/PS4Descriptors.h"
 
 #include "pico/stdlib.h"
+
+#include "config.pb.h"
 
 // MUST BE DEFINED FOR MPG
 extern uint32_t getMillis();
@@ -26,7 +27,11 @@ extern uint64_t getMicro();
 
 struct GamepadButtonMapping
 {
-	GamepadButtonMapping(uint8_t p, uint16_t bm) : pin(p), pinMask((1 << p)), buttonMask(bm) {}
+	GamepadButtonMapping(uint8_t p, uint16_t bm) : 
+		pin(p < NUM_BANK0_GPIOS ? p : 0xff),
+		pinMask(p < NUM_BANK0_GPIOS? (1 << p) : 0),
+		buttonMask(bm)
+	{}
 
 	uint8_t pin;
 	uint32_t pinMask;
@@ -34,22 +39,26 @@ struct GamepadButtonMapping
 
 	inline void setPin(uint8_t p)
 	{
-		pin = p;
-		pinMask = 1 << p;
+		if (p < NUM_BANK0_GPIOS)
+		{
+			pin = p;
+			pinMask = 1 << p;
+		}
+		else
+		{
+			pin = 0xff;
+			pinMask = 0;
+		}
 	}
+
+	bool isAssigned() const { return pin != 0xff; }
 };
 
 #define GAMEPAD_DIGITAL_INPUT_COUNT 18 // Total number of buttons, including D-pad
 
 class Gamepad {
 public:
-	Gamepad(int debounceMS = 5, GamepadStorage *storage = &GamepadStore) :
-			debounceMS(debounceMS)
-			, f1Mask((GAMEPAD_MASK_S1 | GAMEPAD_MASK_S2))
-			, f2Mask((GAMEPAD_MASK_L3 | GAMEPAD_MASK_R3))
-			, debouncer(debounceMS)
-			, mpgStorage(storage)
-	{}
+	Gamepad(int debounceMS = 5);
 
 	void setup();
 	void process();
@@ -80,6 +89,7 @@ public:
 	SwitchReport *getSwitchReport();
 	XInputReport *getXInputReport();
 	KeyboardReport *getKeyboardReport();
+	PS4Report *getPS4Report();
 
 	/**
 	 * @brief Check for a button press. Used by `pressed[Button]` helper methods.
@@ -113,12 +123,17 @@ public:
 	inline bool __attribute__((always_inline)) pressedA2()    { return pressedButton(GAMEPAD_MASK_A2); }
 	inline bool __attribute__((always_inline)) pressedF1()    { return pressedButton(f1Mask); }
 	inline bool __attribute__((always_inline)) pressedF2()    { return pressedButton(f2Mask); }
+
+	const GamepadOptions& getOptions() const { return options; }
+
+	void setInputMode(InputMode inputMode) { options.inputMode = inputMode; }
+	void setSOCDMode(SOCDMode socdMode) { options.socdMode = socdMode; }
+	void setDpadMode(DpadMode dpadMode) { options.dpadMode = dpadMode; }
+
 	GamepadDebouncer debouncer;
-	GamepadStorage *mpgStorage;
 	const uint8_t debounceMS;
 	uint16_t f1Mask;
 	uint16_t f2Mask;
-	GamepadOptions options;
 	GamepadState rawState;
 	GamepadState state;
 	GamepadButtonMapping *mapDpadUp;
@@ -141,10 +156,29 @@ public:
 	GamepadButtonMapping *mapButtonA2;
 	GamepadButtonMapping **gamepadMappings;
 
+	inline static const SOCDMode resolveSOCDMode(const GamepadOptions& options) {
+		 return (options.socdMode == SOCD_MODE_BYPASS &&
+				 (options.inputMode == INPUT_MODE_HID ||
+				  options.inputMode == INPUT_MODE_SWITCH ||
+				  options.inputMode == INPUT_MODE_PS4)) ?
+				SOCD_MODE_NEUTRAL : options.socdMode;
+	};
+
 private:
 	void releaseAllKeys(void);
 	void pressKey(uint8_t code);
 	uint8_t getModifier(uint8_t code);
+
+	GamepadOptions& options;
+
+	HotkeyEntry hotkeyF1Up;
+	HotkeyEntry hotkeyF1Down;
+	HotkeyEntry hotkeyF1Left;
+	HotkeyEntry hotkeyF1Right;
+	HotkeyEntry hotkeyF2Up;
+	HotkeyEntry hotkeyF2Down;
+	HotkeyEntry hotkeyF2Left;
+	HotkeyEntry hotkeyF2Right;
 };
 
 #endif
